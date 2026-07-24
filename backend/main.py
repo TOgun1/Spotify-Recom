@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
-from spotify_client import get_authorise_url, get_access_token, get_spotify_client
+from spotify_client import get_authorize_url, get_access_token, get_spotify_client
 import os
 from dotenv import load_dotenv
 
@@ -20,7 +20,7 @@ def login():
     return RedirectResponse(auth_url)
 
 @app.get("/callback")
-def callback(code: str):
-    access_token = get_access_token(code)
+def callback(request: Request, code: str):
     token = get_access_token(code)
     request.session["access_token"] = token
+    return {"access_token": "success"}
