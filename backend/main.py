@@ -24,3 +24,13 @@ def callback(request: Request, code: str):
     token = get_access_token(code)
     request.session["access_token"] = token
     return {"access_token": "success"}
+
+@app.get("/recommendations")
+def recommendations(request: Request):
+    token = request.session.get("access_token")
+    sp = get_spotify_client(token)
+
+    top_tracks = get_top_tracks(sp)
+    recently_played = get_recently_played(sp)
+    #To be continued once the recommendation algorithm is implemented
+    
