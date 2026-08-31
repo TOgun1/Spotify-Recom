@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from spotify_client import get_artists_details, get_authorize_url, get_access_token,get_artists_details, get_spotify_client,get_top_tracks, get_recently_played, get_related_artists, get_artist_top_tracks
 import os
-from recommender import build_lookup_dict, create_dataframe
+from recommender import build_lookup_dict, create_dataframe, get_genres_for_row, get_min_followers_for_row
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -69,4 +69,6 @@ def recommendations(request: Request):
         artist_details.extend(result['artists'])
 
     table = build_lookup_dict(artist_details)
-    return {"top_tracks": parsed_data}
+    df['genres'] = df['artist_ids'].apply(lambda x: get_genres_for_row(x, table))
+    df['min_followers'] = df['artist_ids'].apply(lambda x: get_min_followers_for_row(x, table))
+    return {"top_tracks": df}

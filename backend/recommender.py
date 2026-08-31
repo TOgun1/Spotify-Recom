@@ -15,3 +15,15 @@ def build_lookup_dict(details):
             'followers': artist['followers']['total'],
         }
     return info
+
+def get_genres_for_row(artist_ids, info):
+    genres = set()
+    for artist_id in artist_ids:
+        genres.update(info.get(artist_id, {}).get('genres', []))
+    return sorted(genres)
+
+def get_min_followers_for_row(artist_ids, info):
+    follower_counts = [info.get(aid, {}).get("followers", 0) for aid in artist_ids]
+    if not follower_counts:
+        return 0
+    return min(follower_counts)
