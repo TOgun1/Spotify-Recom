@@ -92,3 +92,24 @@ def construct_related_artists_df(df, sp, artist_ids):
 def filter_underground(df):
     filtered_df = df[df['min_followers'] < 50000]
     return filtered_df
+
+def combine_dataframes(df1, df2):
+    combined_df = pd.concat([df1, df2], ignore_index=True)
+    return combined_df
+
+def compute_similarity(combined_df):
+    genre_strings = combined_df['genres'].apply(lambda genres: ' '.join(g.replace(' ', '_') for g in genres))
+    vectorizer = CountVectorizer(token_pattern=r"[^\s]+") # Regex changes the rule to treat each genre as a single token, even if it contains spaces.
+    genre_matrix = vectorizer.fit_transform(genre_strings)
+
+    similarity_matrix = cosine_similarity(genre_matrix)
+    return similarity_matrix
+
+def rank_candidates(df,candidate_df, similarity_matrix):
+    candidate_vs_taste = similarity_matrix[len(df):, :len(df)] # Skips the first len(df) rows to get only the candidate tracks and skips the first len(df) columns to get only the user's taste tracks.
+    scores = candidate_vs_taste.mean(axis=1) # Compute the average similarity score for each candidate track across all of the user's taste tracks.
+    candidate_df = candidate_df.assign(score=scores)
+    ranked = candidate_df.sort_values(by='score', ascending=False)
+    top_recom = ranked.head(20)
+    return top_recom
+
