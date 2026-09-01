@@ -1,5 +1,5 @@
 import pandas as pd
-from spotify_client import get_album_tracks, get_artist_albums, get_related_artists, get_artists_details, get_artist_top_tracks
+from spotify_client import get_album_tracks, get_artist_albums, get_related_artists, get_artists_details
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity

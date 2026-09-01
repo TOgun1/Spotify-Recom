@@ -1,4 +1,7 @@
 # Underground Song Recommendation Application using Cosine Similarity
+UPDATE:
+Due to Spotify restricting follower count and popularity data of artists from the developer api, the algorithm currently does not recommend underground artists
+but a work around will be made by either web scraping or using third party apis.
 (IN PROGRESS)
 
 TECH STACK:
