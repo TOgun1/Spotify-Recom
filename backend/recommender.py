@@ -1,5 +1,5 @@
 import pandas as pd
-from spotify_client import get_related_artists, get_artists_details, get_artist_top_tracks
+from spotify_client import get_album_tracks, get_artist_albums, get_related_artists, get_artists_details, get_artist_top_tracks
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -13,7 +13,6 @@ def build_lookup_dict(details):
     for artist in details:
         info[artist['id']] = {
             'genres': artist.get('genres', []),
-            'followers': artist['followers']['total'],
         }
     return info
 
@@ -59,14 +58,7 @@ def get_genres_for_row(artist_ids, info):
         genres.update(info.get(artist_id, {}).get('genres', []))
     return sorted(genres)
 
-def get_min_followers_for_row(artist_ids, info):
-    follower_counts = [info.get(aid, {}).get("followers", 0) for aid in artist_ids]
-    if not follower_counts:
-        return 0
-    return min(follower_counts)
-
 def construct_related_artists_df(df, sp, artist_ids):
-    graph = {}
     parsed_data = []
     unique_tracks = []
     artist_ids = artist_ids[:10]
@@ -74,24 +66,25 @@ def construct_related_artists_df(df, sp, artist_ids):
         related_artists = get_related_artists(sp, artist_id)
         top_related_artists = related_artists['artists'][:10] if len(related_artists['artists']) > 10 else related_artists['artists']
         for artist in top_related_artists:
-            top_tracks = get_artist_top_tracks(sp, artist['id'])
-            tracks = top_tracks['tracks']
+            albums = get_artist_albums(sp, artist['id'])
+            if not albums['items']:
+                continue
+            album_id = albums['items'][0]['id']
+            album_tracks = get_album_tracks(sp, album_id)
+            tracks = album_tracks['items']
             unique_tracks.extend(track for track in tracks if track['id'] not in df['track_id'].values)
-        
+ 
     extract_track_data(unique_tracks, parsed_data)
-
+ 
     candidate_df = create_dataframe(parsed_data)
     artist_details = separate_into_unique_artists(sp, candidate_df)
-
+ 
     table = build_lookup_dict(artist_details)
     candidate_df['genres'] = candidate_df['artist_ids'].apply(lambda x: get_genres_for_row(x, table))
-    candidate_df['min_followers'] = candidate_df['artist_ids'].apply(lambda x: get_min_followers_for_row(x, table))
-
+ 
     return candidate_df
 
-def filter_underground(df):
-    filtered_df = df[df['min_followers'] < 50000]
-    return filtered_df
+
 
 def combine_dataframes(df1, df2):
     combined_df = pd.concat([df1, df2], ignore_index=True)

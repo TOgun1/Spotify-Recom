@@ -44,11 +44,10 @@ def recommendations(request: Request):
 
     table = build_lookup_dict(artist_details)
     df['genres'] = df['artist_ids'].apply(lambda x: get_genres_for_row(x, table))
-    df['min_followers'] = df['artist_ids'].apply(lambda x: get_min_followers_for_row(x, table))
+    
 
     #Build Candidate Pool
     candidate_df = construct_related_artists_df(df, sp, df['artist_ids'].explode().unique().tolist())
-    candidate_df = filter_underground(candidate_df)
     combined_df = combine_dataframes(df, candidate_df)
 
     similarity_matrix = compute_similarity(combined_df)
