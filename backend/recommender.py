@@ -78,14 +78,14 @@ def construct_related_artists_df(df, sp, artist_ids):
             tracks = top_tracks['tracks']
             unique_tracks.extend(track for track in tracks if track['id'] not in df['track_id'].values)
         
-        extract_track_data(unique_tracks, parsed_data)
+    extract_track_data(unique_tracks, parsed_data)
 
-        candidate_df = create_dataframe(parsed_data)
-        artist_details = separate_into_unique_artists(df)
+    candidate_df = create_dataframe(parsed_data)
+    artist_details = separate_into_unique_artists(df)
 
-        table = build_lookup_dict(artist_details)
-        candidate_df['genres'] = candidate_df['artist_ids'].apply(lambda x: get_genres_for_row(x, table))
-        candidate_df['min_followers'] = candidate_df['artist_ids'].apply(lambda x: get_min_followers_for_row(x, table))
+    table = build_lookup_dict(artist_details)
+    candidate_df['genres'] = candidate_df['artist_ids'].apply(lambda x: get_genres_for_row(x, table))
+    candidate_df['min_followers'] = candidate_df['artist_ids'].apply(lambda x: get_min_followers_for_row(x, table))
 
-        return candidate_df
+    return candidate_df
 
