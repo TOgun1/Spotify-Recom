@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from spotify_client import get_artists_details, get_authorize_url, get_access_token,get_artists_details, get_spotify_client,get_top_tracks, get_recently_played, get_related_artists, get_artist_top_tracks
 import os
-from recommender import build_lookup_dict, combine_dataframes, compute_similarity, construct_related_artists_df, create_dataframe, extract_recently_played_data, extract_track_data, get_genres_for_row, get_min_followers_for_row, separate_into_unique_artists, rank_candidates
+from recommender import build_lookup_dict, combine_dataframes, compute_similarity, construct_related_artists_df, create_dataframe, extract_recently_played_data, extract_track_data, get_genres_for_row, get_min_followers_for_row, separate_into_unique_artists, rank_candidates, filter_underground
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -48,6 +48,7 @@ def recommendations(request: Request):
 
     #Build Candidate Pool
     candidate_df = construct_related_artists_df(df, sp, df['artist_ids'].explode().unique().tolist())
+    candidate_df = filter_underground(candidate_df)
     combined_df = combine_dataframes(df, candidate_df)
 
     similarity_matrix = compute_similarity(combined_df)
