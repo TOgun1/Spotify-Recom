@@ -1,5 +1,5 @@
 import pandas as pd
-from backend.spotify_client import get_related_artists, get_artists_details
+from spotify_client import get_related_artists, get_artists_details, get_artist_top_tracks
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -43,8 +43,8 @@ def extract_recently_played_data(recently_played, parsed_data):
     
             parsed_data.append((track_id, track_name, artist_ids, artist_names, popularity))
 
-def separate_into_unique_artists(df):
-     unique_artists_ids = {artist_id for artist_list in df['artist_ids'] for artist_id in artist_list}
+def separate_into_unique_artists(sp,df):
+     unique_artists_ids = list({artist_id for artist_list in df['artist_ids'] for artist_id in artist_list})
      batch_size = 50
      artist_details = []
      for i in range(0, len(unique_artists_ids), batch_size):
@@ -72,16 +72,16 @@ def construct_related_artists_df(df, sp, artist_ids):
     artist_ids = artist_ids[:10]
     for artist_id in artist_ids:
         related_artists = get_related_artists(sp, artist_id)
-        related_artists = related_artists['artists'][:10] if len(related_artists['artists']) > 10 else related_artists['artists']
-        for artist in related_artists['artists']:
-            top_tracks = sp.artist_top_tracks(sp,artist['id'])
+        top_related_artists = related_artists['artists'][:10] if len(related_artists['artists']) > 10 else related_artists['artists']
+        for artist in top_related_artists:
+            top_tracks = get_artist_top_tracks(sp, artist['id'])
             tracks = top_tracks['tracks']
             unique_tracks.extend(track for track in tracks if track['id'] not in df['track_id'].values)
         
     extract_track_data(unique_tracks, parsed_data)
 
     candidate_df = create_dataframe(parsed_data)
-    artist_details = separate_into_unique_artists(df)
+    artist_details = separate_into_unique_artists(sp, candidate_df)
 
     table = build_lookup_dict(artist_details)
     candidate_df['genres'] = candidate_df['artist_ids'].apply(lambda x: get_genres_for_row(x, table))
@@ -89,3 +89,6 @@ def construct_related_artists_df(df, sp, artist_ids):
 
     return candidate_df
 
+def filter_underground(df):
+    filtered_df = df[df['min_followers'] < 50000]
+    return filtered_df
