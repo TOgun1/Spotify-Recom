@@ -41,6 +41,9 @@ def get_top_tracks(sp):
 def get_recently_played(sp):
     return sp.current_user_recently_played(limit=50)
 
+def search_tracks_by_genre(sp, genre, limit=10, offset=0):
+    return sp.search(q=f'genre:"{genre}"', type='track', limit=limit, offset=offset)
+
 def get_artists_details(sp, artist_ids):
     artists = []
     for artist_id in artist_ids:

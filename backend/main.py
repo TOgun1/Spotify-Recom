@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from spotify_client import get_authorize_url, get_access_token, get_spotify_client,get_top_tracks, get_recently_played
 import os
-from recommender import build_lookup_dict, combine_dataframes, compute_similarity, construct_related_artists_df, create_dataframe, extract_recently_played_data, extract_track_data, get_genres_for_row, separate_into_unique_artists, rank_candidates
+from recommender import build_lookup_dict, combine_dataframes, compute_similarity, construct_candidate_df_from_search, create_dataframe, extract_recently_played_data, extract_track_data, get_genres_for_row, get_top_genres, separate_into_unique_artists, rank_candidates
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -47,11 +47,12 @@ def recommendations(request: Request):
     
 
     #Build Candidate Pool
-    candidate_df = construct_related_artists_df(df, sp, df['artist_ids'].explode().unique().tolist())
+    top_genres = get_top_genres(df, top_n=5)
+    candidate_df = construct_candidate_df_from_search(df, sp, top_genres, results_per_genre=30)
     combined_df = combine_dataframes(df, candidate_df)
 
     similarity_matrix = compute_similarity(combined_df)
     ranked_candidates = rank_candidates(df, candidate_df, similarity_matrix)
     result = ranked_candidates.to_dict(orient='records')
-    
+    print(df[['track_name', 'genres']])
     return {"recommendations": result}

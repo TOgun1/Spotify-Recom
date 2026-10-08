@@ -1,5 +1,5 @@
 import pandas as pd
-from spotify_client import get_album_tracks, get_artist_albums, get_related_artists, get_artists_details
+from spotify_client import get_artists_details, search_tracks_by_genre
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -58,30 +58,40 @@ def get_genres_for_row(artist_ids, info):
         genres.update(info.get(artist_id, {}).get('genres', []))
     return sorted(genres)
 
-def construct_related_artists_df(df, sp, artist_ids):
-    parsed_data = []
+def get_top_genres(df, top_n=5):
+    all_genres = [g for genre_list in df['genres'] for g in genre_list]
+    if not all_genres:
+        return []
+    genre_counts = pd.Series(all_genres).value_counts()
+    return genre_counts.head(top_n).index.tolist()
+
+def construct_candidate_df_from_search(df, sp, genres, results_per_genre=30):
     unique_tracks = []
-    artist_ids = artist_ids[:10]
-    for artist_id in artist_ids:
-        related_artists = get_related_artists(sp, artist_id)
-        top_related_artists = related_artists['artists'][:10] if len(related_artists['artists']) > 10 else related_artists['artists']
-        for artist in top_related_artists:
-            albums = get_artist_albums(sp, artist['id'])
-            if not albums['items']:
-                continue
-            album_id = albums['items'][0]['id']
-            album_tracks = get_album_tracks(sp, album_id)
-            tracks = album_tracks['items']
-            unique_tracks.extend(track for track in tracks if track['id'] not in df['track_id'].values)
- 
+    existing_ids = set(df['track_id'].values)
+    seen_ids = set()
+
+    for genre in genres:
+        
+        for offset in range(0, results_per_genre, 10):
+            result = search_tracks_by_genre(sp, genre, limit=10, offset=offset)
+            tracks = result.get('tracks', {}).get('items', [])
+            if not tracks:
+                break
+            for track in tracks:
+                if track['id'] in existing_ids or track['id'] in seen_ids:
+                    continue
+                seen_ids.add(track['id'])
+                unique_tracks.append(track)
+
+    parsed_data = []
     extract_track_data(unique_tracks, parsed_data)
- 
+
     candidate_df = create_dataframe(parsed_data)
     artist_details = separate_into_unique_artists(sp, candidate_df)
- 
+
     table = build_lookup_dict(artist_details)
     candidate_df['genres'] = candidate_df['artist_ids'].apply(lambda x: get_genres_for_row(x, table))
- 
+
     return candidate_df
 
 
@@ -92,13 +102,15 @@ def combine_dataframes(df1, df2):
 
 def compute_similarity(combined_df):
     genre_strings = combined_df['genres'].apply(lambda genres: ' '.join(g.replace(' ', '_') for g in genres))
-    vectorizer = CountVectorizer(token_pattern=r"[^\s]+") # Regex changes the rule to treat each genre as a single token, even if it contains spaces.
+    if not genre_strings.str.strip().any():
+        return None  # no genre data available at all
+    vectorizer = CountVectorizer(token_pattern=r"[^\s]+")
     genre_matrix = vectorizer.fit_transform(genre_strings)
-
-    similarity_matrix = cosine_similarity(genre_matrix)
-    return similarity_matrix
+    return cosine_similarity(genre_matrix)
 
 def rank_candidates(df,candidate_df, similarity_matrix):
+    if similarity_matrix is None:
+        return candidate_df.head(20)
     candidate_vs_taste = similarity_matrix[len(df):, :len(df)] # Skips the first len(df) rows to get only the candidate tracks and skips the first len(df) columns to get only the user's taste tracks.
     scores = candidate_vs_taste.mean(axis=1) # Compute the average similarity score for each candidate track across all of the user's taste tracks.
     candidate_df = candidate_df.assign(score=scores)
