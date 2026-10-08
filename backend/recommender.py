@@ -118,3 +118,35 @@ def rank_candidates(df,candidate_df, similarity_matrix):
     top_recom = ranked.head(20)
     return top_recom
 
+def score_and_rank_underground(candidates, known_artists=None, max_listeners: int = 100000, top_n: int = 20):
+    if not candidates:
+        return []
+
+    
+    df = pd.DataFrame(candidates)
+
+    if known_artists:
+        df = df[~df['artist_name'].str.lower().isin(known_artists)].copy()
+    if df.empty:
+        return []
+
+   
+    df['listeners'] = pd.to_numeric(df['listeners'], errors='coerce').fillna(0)
+    df['match_score'] = pd.to_numeric(df['match_score'], errors='coerce').fillna(0)
+
+    
+    df_filtered = df[df['listeners'] <= max_listeners].copy()
+
+    
+    if df_filtered.empty:
+        median_listeners = df['listeners'].median()
+        df_filtered = df[df['listeners'] <= median_listeners].copy()
+
+   
+    df_filtered['underground_score'] = df_filtered['match_score'] / (np.log1p(df_filtered['listeners']) + 1)
+    
+
+    df_sorted = df_filtered.sort_values(by='underground_score', ascending=False)
+    df_clean = df_sorted.drop_duplicates(subset=['track_name', 'artist_name'])
+
+    return df_clean.head(top_n)[['artist_name', 'track_name', 'listeners', 'underground_score']].to_dict(orient='records')

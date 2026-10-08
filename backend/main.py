@@ -1,15 +1,40 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
-from starlette.middleware.sessions import SessionMiddleware
-from spotify_client import get_authorize_url, get_access_token, get_spotify_client,get_top_tracks, get_recently_played
 import os
-from recommender import build_lookup_dict, combine_dataframes, compute_similarity, construct_candidate_df_from_search, create_dataframe, extract_recently_played_data, extract_track_data, get_genres_for_row, get_top_genres, separate_into_unique_artists, rank_candidates
 from dotenv import load_dotenv
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
+
+from spotify_client import (
+    create_underground_playlist,
+    get_access_token,
+    get_authorize_url,
+    get_recently_played,
+    get_spotify_client,
+    get_top_tracks,
+    resolve_tracks_to_uris,
+)
+from lastfm_client import select_underground_candidates
+from recommender import (
+    create_dataframe,
+    extract_recently_played_data,
+    extract_track_data,
+    score_and_rank_underground,
+)
 
 load_dotenv()
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET"))
+
+class TrackIn(BaseModel):
+    artist_name: str
+    track_name: str
+
+
+class PlaylistRequest(BaseModel):
+    playlist_name: str
+    tracks: list[TrackIn]
 
 @app.get("/health")
 def health():
@@ -30,29 +55,33 @@ def callback(request: Request, code: str):
 def recommendations(request: Request):
     token = request.session.get("access_token")
     sp = get_spotify_client(token)
-    parsed_data = []
 
+    parsed_data = []
     top_tracks = get_top_tracks(sp)
     tracks_data = top_tracks['items']
     extract_track_data(tracks_data, parsed_data)
-
     recently_played = get_recently_played(sp)
     extract_recently_played_data(recently_played, parsed_data)
-
     df = create_dataframe(parsed_data)
-    artist_details = separate_into_unique_artists(sp,df)
 
-    table = build_lookup_dict(artist_details)
-    df['genres'] = df['artist_ids'].apply(lambda x: get_genres_for_row(x, table))
-    
+    artist_counts = df['artist_names'].explode().value_counts()
+    seed_artists = artist_counts.head(5).index.tolist()
+    known_artists = {name.lower() for name in artist_counts.index}
 
-    #Build Candidate Pool
-    top_genres = get_top_genres(df, top_n=5)
-    candidate_df = construct_candidate_df_from_search(df, sp, top_genres, results_per_genre=30)
-    combined_df = combine_dataframes(df, candidate_df)
+    candidates = select_underground_candidates(seed_artists)
+    print("candidates from Last.fm:", len(candidates))
+    recs = score_and_rank_underground(candidates, known_artists=known_artists)
+    print("after ranking:", len(recs))
+    return {"seeds": seed_artists, "recommendations": recs}
 
-    similarity_matrix = compute_similarity(combined_df)
-    ranked_candidates = rank_candidates(df, candidate_df, similarity_matrix)
-    result = ranked_candidates.to_dict(orient='records')
-    print(df[['track_name', 'genres']])
-    return {"recommendations": result}
+@app.post("/create_playlist")
+def create_playlist(request: Request, payload: PlaylistRequest):
+    token = request.session.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    sp = get_spotify_client(token)
+
+    tracks = [t.model_dump() for t in payload.tracks]
+    uris = resolve_tracks_to_uris(sp, tracks)
+    url = create_underground_playlist(sp, payload.playlist_name, uris)
+    return {"playlist_url": url, "tracks_added": len(uris)}

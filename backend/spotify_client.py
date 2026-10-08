@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SCOPE = "user-top-read user-read-recently-played user-library-read playlist-read-private"
+SCOPE = "user-top-read user-read-recently-played user-library-read playlist-read-private playlist-modify-public playlist-modify-private"
 
 #OAuth Manager
 def get_oauth_manager():
@@ -53,3 +53,29 @@ def get_artists_details(sp, artist_ids):
 
 def get_related_artists(sp, artist_id):
     return sp.artist_related_artists(artist_id)
+
+def resolve_tracks_to_uris(sp, recommended_tracks):
+    track_uris = []
+    
+    for item in recommended_tracks:
+        query = f"track:{item['track_name']} artist:{item['artist_name']}"
+        try:
+            results = sp.search(q=query, type='track', limit=1)
+            items = results.get('tracks', {}).get('items', [])
+            if items:
+                track_uris.append(items[0]['uri'])
+        except Exception as e:
+            print(f"Skipping {item['track_name']}: {e}")
+            
+    return track_uris
+
+def create_underground_playlist(sp, playlist_name, track_uris):
+    playlist = sp._post("me/playlists", payload={
+        "name": playlist_name,
+        "public": False,
+        "description": "Created by Spotify-Recomm",
+    })
+
+    if track_uris:
+        sp._post(f"playlists/{playlist['id']}/items", payload={"uris": track_uris})
+    return playlist['external_urls']['spotify']
