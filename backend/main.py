@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.sessions import SessionMiddleware, CORSMiddleware
 
 from spotify_client import (
     create_underground_playlist,
@@ -25,6 +25,13 @@ from recommender import (
 load_dotenv()
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], # Your Vite frontend URL
+    allow_credentials=True, # Required if you are using session cookies
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET"))
 
 class TrackIn(BaseModel):
@@ -72,6 +79,8 @@ def recommendations(request: Request):
     print("candidates from Last.fm:", len(candidates))
     recs = score_and_rank_underground(candidates, known_artists=known_artists)
     print("after ranking:", len(recs))
+
+    
     return {"seeds": seed_artists, "recommendations": recs}
 
 @app.post("/create_playlist")

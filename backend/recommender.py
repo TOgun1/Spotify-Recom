@@ -118,7 +118,7 @@ def rank_candidates(df,candidate_df, similarity_matrix):
     top_recom = ranked.head(20)
     return top_recom
 
-def score_and_rank_underground(candidates, known_artists=None, max_listeners: int = 100000, top_n: int = 20):
+def score_and_rank_underground(candidates, known_artists=None, max_listeners: int = 100000, top_n: int = 20, max_per_artist: int = 2):
     if not candidates:
         return []
 
@@ -148,5 +148,6 @@ def score_and_rank_underground(candidates, known_artists=None, max_listeners: in
 
     df_sorted = df_filtered.sort_values(by='underground_score', ascending=False)
     df_clean = df_sorted.drop_duplicates(subset=['track_name', 'artist_name'])
+    df_clean = df_clean.groupby('artist_name').head(max_per_artist)
 
     return df_clean.head(top_n)[['artist_name', 'track_name', 'listeners', 'underground_score']].to_dict(orient='records')

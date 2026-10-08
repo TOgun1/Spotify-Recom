@@ -6,7 +6,7 @@ load_dotenv()
 LASTFM_API_KEY = os.getenv("LASTFM_API_KEY")
 API_URL = "http://ws.audioscrobbler.com/2.0/"
 
-def get_similar_artists(artist_name, limit: int = 5):
+def get_similar_artists(artist_name, limit: int = 8):
     params = {
         "method": "artist.getsimilar",
         "artist": artist_name,
@@ -55,9 +55,9 @@ def get_artist_top_tracks(artist_name, match_score, limit: int = 10):
 def select_underground_candidates(seed_artist_names: list):
     all_candidates = []
     for seed_artist in seed_artist_names:
-        similar = get_similar_artists(seed_artist, limit=5)
+        similar = get_similar_artists(seed_artist, limit=8)
         for item in similar:
-            tracks = get_artist_top_tracks(item["name"], item["match_score"], limit=5)
+            tracks = get_artist_top_tracks(item["name"], item["match_score"], limit=8)
             all_candidates.extend(tracks)
     return all_candidates
 
