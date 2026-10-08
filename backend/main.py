@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from starlette.middleware.sessions import SessionMiddleware, CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 from spotify_client import (
     create_underground_playlist,
