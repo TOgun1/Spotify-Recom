@@ -100,4 +100,10 @@ def create_playlist(request: Request, payload: PlaylistRequest):
 
 #Deployment
 from fastapi.staticfiles import StaticFiles
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+frontend_dist = BASE_DIR / "frontend" / "dist"
+
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
