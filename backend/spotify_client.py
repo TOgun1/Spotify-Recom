@@ -29,12 +29,6 @@ def get_spotify_client(access_token):
     return spotipy.Spotify(auth=access_token)
 
 #Recommendation Algorithm
-def get_artist_albums(sp, artist_id):
-    return sp.artist_albums(artist_id, limit=1)
-
-def get_album_tracks(sp, album_id):
-    return sp.album_tracks(album_id)
-
 def get_top_tracks(sp):
     return sp.current_user_top_tracks(limit=50, time_range='medium_term')
 
@@ -50,9 +44,6 @@ def get_artists_details(sp, artist_ids):
         artist = sp.artist(artist_id)
         artists.append(artist)
     return {"artists": artists}
-
-def get_related_artists(sp, artist_id):
-    return sp.artist_related_artists(artist_id)
 
 def resolve_tracks_to_uris(sp, recommended_tracks):
     track_uris = []
