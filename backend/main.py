@@ -45,22 +45,22 @@ class PlaylistRequest(BaseModel):
     playlist_name: str
     tracks: list[TrackIn]
 
-@app.get("/health")
+@app.get("/api/health")
 def health():
     return {"status": "ok"}
 
-@app.get("/login")
+@app.get("/api/login")
 def login():
     auth_url = get_authorize_url()
     return RedirectResponse(auth_url)
 
-@app.get("/callback")
+@app.get("/api/callback")
 def callback(request: Request, code: str):
     token = get_access_token(code)
     request.session["access_token"] = token
-    return RedirectResponse(url="http://127.0.0.1:5173")
+    return RedirectResponse(url="https://underground-song-recommendation.onrender.com")
 
-@app.get("/recommendations")
+@app.get("/api/recommendations")
 def recommendations(request: Request):
     token = request.session.get("access_token")
     if not token:
@@ -86,7 +86,7 @@ def recommendations(request: Request):
     
     return {"seeds": seed_artists, "recommendations": recs}
 
-@app.post("/create_playlist")
+@app.post("/api/create_playlist")
 def create_playlist(request: Request, payload: PlaylistRequest):
     token = request.session.get("access_token")
     if not token:
@@ -100,10 +100,15 @@ def create_playlist(request: Request, payload: PlaylistRequest):
 
 #Deployment
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
+from fastapi.responses import FileResponse
+import os
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-frontend_dist = BASE_DIR / "frontend" / "dist"
+frontend_path = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 
-if frontend_dist.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
+
+app.mount("/assets", StaticFiles(directory=f"{frontend_path}/assets"), name="assets")
+
+
+@app.get("/{catchall:path}")
+async def serve_react_app(catchall: str):
+    return FileResponse(f"{frontend_path}/index.html")
