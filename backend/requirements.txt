@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 spotipy
 python-dotenv
-scikit-learn
 pandas
 itsdangerous
 requests

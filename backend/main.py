@@ -97,3 +97,7 @@ def create_playlist(request: Request, payload: PlaylistRequest):
     uris = resolve_tracks_to_uris(sp, tracks)
     url = create_underground_playlist(sp, payload.playlist_name, uris)
     return {"playlist_url": url, "tracks_added": len(uris)}
+
+#Deployment
+from fastapi.staticfiles import StaticFiles
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
