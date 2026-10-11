@@ -1,20 +1,36 @@
-# Underground Song Recommendation Application using Cosine Similarity
-UPDATE:
-Due to Spotify restricting follower count and popularity data of artists from the developer api, the algorithm currently does not recommend underground artists
-but a work around will be made by either web scraping or using third party apis.
-(IN PROGRESS)
+# Underground Song Recommender
 
-TECH STACK:
-Back end - Python & FastAPI
-Front end - React
+As someone who loves listening to more obscure music and underground artists, I noticed that Spotify tended to only recommend music from artists I already knew or who were mainstream. Hence, I thought it may be fun to build my own application to fix this issue. 
 
-BACKEND:
-OAUTH AND AUTHENTICATION:
-Allows Users to access their real spotify account through the use of the Spotify API available to developers. Users give permission to access their data.
+Recently, Spotify heavily restricted and deprecated access to several of their core recommendation endpoints. To bypass this limitation and still build a working engine, I pivoted to integrating the Last.fm API. I used Last.fm's data to cross-reference artists, fetch global listener metrics, and then apply the underground filter.
 
-SPOTIFY CLIENT:
-Made use of the popular spotipy API in order to send and retrieve data from spotify more easily and reduce redundancy.
+## Demo Link
 
-RECOMMENDATION ALGORITHM:
+Available at: https://underground-song-recommendation.onrender.com/
 
-FRONT END:
+(Although since it is hosted on the free tier, initial startup can be up to around a minute long)
+
+## Features
+
+* **Secure Spotify Authentication:** Implements the Spotify OAuth flow for secure user login.
+* **Intelligent Recommendation Engine:** Analyzes users' top tracks and recently played history to establish a baseline taste profile.
+* **Underground Discovery:** Integrates Last.fm and Spotify search to filter and rank tracks based on listener counts, ensuring recommendations are genuine hidden gems.
+* **One-Click Export:** Automatically creates a private playlist in the user's Spotify account and populates it with the recommended tracks.
+* **Seamless Full-Stack Architecture:** Built with a React frontend served directly by a FastAPI backend, eliminating CORS issues and third-party cookie blocking during OAuth.
+
+## Tech Stack
+
+**Frontend:**
+* React (Vite)
+* Tailwind CSS
+* Axios
+
+**Backend:**
+* Python (FastAPI)
+* Spotipy (Spotify API wrapper)
+* Pandas & NumPy (Data manipulation and scoring)
+* Uvicorn (ASGI server)
+
+**Deployment:**
+* Hosted on Render (Unified backend serving static frontend files)
+
