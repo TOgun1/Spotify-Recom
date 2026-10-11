@@ -13,7 +13,8 @@ def get_oauth_manager():
         client_id=os.getenv("SPOTIFY_CLIENT_ID"),
         client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
         redirect_uri=os.getenv("SPOTIFY_REDIRECT_URI"),
-        scope=SCOPE
+        scope=SCOPE,
+        show_dialog=True
     )
 
 def get_authorize_url():
@@ -34,9 +35,6 @@ def get_top_tracks(sp):
 
 def get_recently_played(sp):
     return sp.current_user_recently_played(limit=50)
-
-def search_tracks_by_genre(sp, genre, limit=10, offset=0):
-    return sp.search(q=f'genre:"{genre}"', type='track', limit=limit, offset=offset)
 
 def get_artists_details(sp, artist_ids):
     artists = []

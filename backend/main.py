@@ -26,14 +26,15 @@ from recommender import (
 load_dotenv()
 
 app = FastAPI()
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://127.0.0.1:5173"],
     allow_credentials=True, 
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET"))
 
 class TrackIn(BaseModel):
     artist_name: str
@@ -57,13 +58,14 @@ def login():
 def callback(request: Request, code: str):
     token = get_access_token(code)
     request.session["access_token"] = token
-    return RedirectResponse(url="/recommendations")
+    return RedirectResponse(url="http://127.0.0.1:5173")
 
 @app.get("/recommendations")
 def recommendations(request: Request):
     token = request.session.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not logged in")
     sp = get_spotify_client(token)
-
     parsed_data = []
     top_tracks = get_top_tracks(sp)
     tracks_data = top_tracks['items']

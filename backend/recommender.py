@@ -1,8 +1,5 @@
 import pandas as pd
-from spotify_client import get_artists_details, search_tracks_by_genre
 import numpy as np
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 def create_dataframe(tracks_data):
     df = pd.DataFrame(tracks_data, columns=['track_id', 'track_name', 'artist_ids', 'artist_names', 'popularity']).drop_duplicates(subset='track_id')
