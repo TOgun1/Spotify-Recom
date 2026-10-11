@@ -7,8 +7,13 @@ Recently, Spotify heavily restricted and deprecated access to several of their c
 ## Demo Link
 
 Available at: https://underground-song-recommendation.onrender.com/
-
 (Although since it is hosted on the free tier, initial startup can be up to around a minute long)
+
+**Additonally, due to spotify developer account limitations for individuals, the app can only be used by up to 5 users that I explicitly give permission to via the developer platform.
+Hence, for recruiters wanting to see how it works see the demo video below.**
+
+
+
 
 ## Features
 
